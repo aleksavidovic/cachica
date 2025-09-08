@@ -1,5 +1,3 @@
-from typing import List
-
-def parse_command(req: bytes) -> tuple[str, List]:
+def parse_command(req: bytes):
     print(req)
     return "PING", []
