@@ -1,30 +1,25 @@
-[project]
+[tool.poetry]
 name = "cachica"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Aleksa Vidovic",email = "aleksavidovic8@gmail.com"}
-]
+authors = ["Aleksa Vidovic <aleksavidovic8@gmail.com>"]
 readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-]
-
-[tool.poetry]
 packages = [{include = "cachica", from = "src"}]
 
+[tool.poetry.dependencies]
+python = ">=3.11"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.12.12"
 pytest = "^8.4.2"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 # Set the minimum Python version to target for compatibility.
-target-version = "py310"
+target-version = "py311" # Corrected this to match your python requirement
 line-length = 88
 
 [tool.ruff.lint]
@@ -35,11 +30,9 @@ line-length = 88
 # TID: flake8-tidy-imports (enforces clean import structure)
 select = ["E", "F", "I", "B", "TID"]
 
-
 [tool.ruff.format]
 # Matches Black's default quoting style.
 quote-style = "double"
-
 
 [tool.pytest.ini_options]
 minversion = "6.0"
