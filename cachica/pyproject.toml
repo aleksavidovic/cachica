@@ -1,0 +1,52 @@
+[project]
+name = "cachica"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Aleksa Vidovic",email = "aleksavidovic8@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+]
+
+[tool.poetry]
+packages = [{include = "cachica", from = "src"}]
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.12.12"
+pytest = "^8.4.2"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+# Set the minimum Python version to target for compatibility.
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+# A good starting set of rules:
+# E, F: Standard pycodestyle and PyFlakes
+# I: isort (import sorting)
+# B: flake8-bugbear (finds likely bugs)
+# TID: flake8-tidy-imports (enforces clean import structure)
+select = ["E", "F", "I", "B", "TID"]
+
+
+[tool.ruff.format]
+# Matches Black's default quoting style.
+quote-style = "double"
+
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "tests",
+]
+# Common options:
+# -ra: show extra test summary info for all but passed tests
+# --strict-markers: raise errors on unknown markers
+addopts = "-ra --strict-markers"
