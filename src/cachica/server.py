@@ -8,36 +8,41 @@ logging.basicConfig(
 
 
 async def handle_client(reader: StreamReader, writer: StreamWriter):
-    # Get client's address
     addr = writer.get_extra_info("peername")
-    logging.debug(f"Client connected from: {addr}")
+    logging.info(f"Client connected from: {addr}")
 
-    # Read data from the client
-    data_buffer: bytearray = bytearray()
-    while True:
-        data = await reader.read(512)
-        logging.debug(f"recv: {data}")
-        if not data:
-            break
-        data_buffer.extend(data)
+    try:
+        # Loop indefinitely to handle multiple commands from the same client
+        while True:
+            # Use readline() to read data until a newline character is received.
+            data = await reader.readline()
 
-    message = data_buffer.decode()
-    print(f"Received {message} from {addr}")
+            # If readline() returns an empty bytes object, 
+            # the client has closed the connection.
+            if not data:
+                break
 
-    # Send the response back to the client
-    writer.write(data_buffer)
-    await writer.drain()
+            message = data.decode().strip()
+            logging.info(f"Received '{message}' from {addr}")
 
-    # Close the connection
-    print(f"Close the connection with {addr}")
-    writer.close()
+            # Echo the received data back to the client.
+            writer.write(data)
+            await writer.drain()
+            logging.info(f"Echoed '{message}' back to {addr}")
+
+    except ConnectionResetError:
+        logging.warning(f"Connection reset by client {addr}")
+    finally:
+        # Close the connection when the loop is broken.
+        logging.info(f"Closing the connection with {addr}")
+        writer.close()
+        await writer.wait_closed()
 
 
 async def run_server():
-    server = await asyncio.start_server(handle_client, "127.0.0.1", 8888)
+    server = await asyncio.start_server(handle_client, "0.0.0.0", 8888)
 
     addr = server.sockets[0].getsockname()
-    print(f"Serving on {addr}")
     logging.info(f"Serving on {addr}")
 
     async with server:
