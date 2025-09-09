@@ -38,6 +38,7 @@ async def run_server():
 
     addr = server.sockets[0].getsockname()
     print(f"Serving on {addr}")
+    logging.info(f"Serving on {addr}")
 
     async with server:
         await server.serve_forever()
