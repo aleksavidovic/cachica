@@ -39,7 +39,7 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
-          installation-arguments: "--with dev"
+          installation-arguments: "--with-dev"
 
       # Step 4: Run Ruff to check formatting.
       # The --check flag fails the build if code is not formatted, without changing files.
@@ -53,5 +53,6 @@ jobs:
       # Step 6: Run the actual tests with Pytest.
       - name: Run tests with Pytest
         run: poetry run pytest
+
 
 
