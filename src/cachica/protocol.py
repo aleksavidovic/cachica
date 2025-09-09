@@ -1,3 +1,3 @@
 def parse_command(req: bytes):
-    print(req)
-    return "PING", []
+    data = req.decode("utf-8")
+    return data[:4], [] 
