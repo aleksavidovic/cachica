@@ -1,0 +1,54 @@
+# This name will appear in the "Actions" tab of your GitHub repository.
+name: Python CI
+
+# This section defines the triggers for the workflow.
+on:
+  # Run on pushes to the main branch.
+  push:
+    branches:
+      - main
+  # Run on pull requests targeting the main branch.
+  pull_request:
+    branches:
+      - main
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel.
+jobs:
+  build-and-test:
+    # The type of virtual machine to run the job on.
+    runs-on: ubuntu-latest
+
+    # A job is a sequence of steps.
+    steps:
+      # Step 1: Check out your repository code so the workflow can access it.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up the specific version of Python you're using.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Step 3: Install Poetry and cache dependencies in one go.
+      # This single action replaces the manual install, cache setup, and dependency installation steps.
+      # It correctly handles the PATH and caching logic.
+      - name: Install Poetry and dependencies
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      # Step 4: Run Ruff to check formatting.
+      # The --check flag fails the build if code is not formatted, without changing files.
+      - name: Check formatting with Ruff
+        run: poetry run ruff format --check .
+
+      # Step 5: Run Ruff to lint for potential errors and style issues.
+      - name: Lint with Ruff
+        run: poetry run ruff check .
+
+      # Step 6: Run the actual tests with Pytest.
+      - name: Run tests with Pytest
+        run: poetry run pytest
