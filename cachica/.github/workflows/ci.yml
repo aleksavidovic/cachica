@@ -1,41 +1,68 @@
-name: CI Pipeline
+# This name will appear in the "Actions" tab of your GitHub repository.
+name: Python CI
 
+# This section defines the triggers for the workflow.
 on:
+  # Run on pushes to the main branch.
   push:
     branches:
       - main
+  # Run on pull requests targeting the main branch.
   pull_request:
     branches:
       - main
 
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel.
 jobs:
   build-and-test:
+    # The type of virtual machine to run the job on.
     runs-on: ubuntu-latest
 
+    # A job is a sequence of steps.
     steps:
+      # Step 1: Check out your repository code so the workflow can access it.
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
+      # Step 2: Set up the specific version of Python you're using.
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
+      # Step 3: Cache Poetry installation and dependencies for faster builds.
+      # This step dramatically speeds up your pipeline on subsequent runs.
+      - name: Get Poetry Cache Directory
+        id: poetry-cache
+        run: echo "dir=$(poetry config cache-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.poetry-cache.outputs.dir }}
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      # Step 4: Install Poetry itself.
       - name: Install Poetry
-        run: pip install poetry
+        run: pipx install poetry
 
+      # Step 5: Install project dependencies using the lock file for reproducibility.
+      # The --no-root flag prevents installing the cachica package itself,
+      # which is slightly faster and standard practice for CI.
       - name: Install dependencies
         run: poetry install --no-root
 
-      - name: Run Black formatter check
-        run: poetry run black --check src/ tests/
+      # Step 6: Run Ruff to check formatting.
+      # The --check flag fails the build if code is not formatted, without changing files.
+      - name: Check formatting with Ruff
+        run: poetry run ruff format --check .
 
-      - name: Run Flake8 linter
-        run: poetry run flake8 src/ tests/
+      # Step 7: Run Ruff to lint for potential errors and style issues.
+      - name: Lint with Ruff
+        run: poetry run ruff check .
 
-      - name: Run MyPy type checker
-        run: poetry run mypy src/
-
-      - name: Run Pytest tests
+      # Step 8: Run the actual tests with Pytest.
+      - name: Run tests with Pytest
         run: poetry run pytest
-
