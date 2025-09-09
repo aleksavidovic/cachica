@@ -30,7 +30,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Step 3: Cache Poetry installation and dependencies for faster builds.
+      # Step 3: Install Poetry itself. This must happen before we use it.
+      - name: Install Poetry
+        run: pipx install poetry
+
+      # Step 4: Cache Poetry installation and dependencies for faster builds.
       # This step dramatically speeds up your pipeline on subsequent runs.
       - name: Get Poetry Cache Directory
         id: poetry-cache
@@ -43,10 +47,6 @@ jobs:
           key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
             ${{ runner.os }}-poetry-
-
-      # Step 4: Install Poetry itself.
-      - name: Install Poetry
-        run: pipx install poetry
 
       # Step 5: Install project dependencies using the lock file for reproducibility.
       # The --no-root flag prevents installing the cachica package itself,
@@ -66,3 +66,4 @@ jobs:
       # Step 8: Run the actual tests with Pytest.
       - name: Run tests with Pytest
         run: poetry run pytest
+
