@@ -1,40 +1,40 @@
 import asyncio
 import logging
 from asyncio import StreamReader, StreamWriter
+from collections import deque
+
+from protocol import BadRequest, parse_request_from_stream_reader
 
 logging.basicConfig(
-    level=logging.DEBUG, style="{", format="[{threadName} ({thread})] {message}"
+    level=logging.DEBUG,
+    style="{",
+    format="{asctime} [{name}] [{levelname}] {filename}:{lineno:d} - {message}",
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def handle_client(reader: StreamReader, writer: StreamWriter):
     addr = writer.get_extra_info("peername")
-    logging.info(f"Client connected from: {addr}")
+    logger.info(f"Client connected from: {addr}")
 
     try:
         # Loop indefinitely to handle multiple commands from the same client
         while True:
-            # Use readline() to read data until a newline character is received.
-            data = await reader.readline()
-
-            # If readline() returns an empty bytes object, 
-            # the client has closed the connection.
-            if not data:
+            command_dq: deque | None = await parse_request_from_stream_reader(reader)
+            if command_dq is None:
                 break
-
-            message = data.decode().strip()
-            logging.info(f"Received '{message}' from {addr}")
-
-            # Echo the received data back to the client.
-            writer.write(data)
+            command_str = " ".join(command_dq)
+            writer.write(command_str.encode(encoding="ascii"))
             await writer.drain()
-            logging.info(f"Echoed '{message}' back to {addr}")
+            logger.info(f"Echoed '{command_str}' back to {addr}")
 
     except ConnectionResetError:
-        logging.warning(f"Connection reset by client {addr}")
+        logger.warning(f"Connection reset by client {addr}")
+    except BadRequest:
+        logger.critical("Request must start with b'*'")
     finally:
-        # Close the connection when the loop is broken.
-        logging.info(f"Closing the connection with {addr}")
+        logger.info(f"Closing the connection with {addr}")
         writer.close()
         await writer.wait_closed()
 
@@ -43,7 +43,7 @@ async def run_server():
     server = await asyncio.start_server(handle_client, "0.0.0.0", 8888)
 
     addr = server.sockets[0].getsockname()
-    logging.info(f"Serving on {addr}")
+    logger.info(f"Serving on {addr}")
 
     async with server:
         await server.serve_forever()
