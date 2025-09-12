@@ -6,6 +6,10 @@ authors = ["Aleksa Vidovic <aleksavidovic8@gmail.com>"]
 readme = "README.md"
 packages = [{include = "cachica", from = "src"}]
 
+# Entry point
+[tool.poetry.scripts]
+cachica-server = "cachica.server:main"
+
 [tool.poetry.dependencies]
 python = ">=3.11"
 

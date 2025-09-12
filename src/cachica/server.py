@@ -1,11 +1,12 @@
 import pdb
 import asyncio
 import logging
+import functools
 from asyncio import StreamReader, StreamWriter
 from collections import deque
 
-import protocol 
-import datastore
+from cachica.protocol import Parser, ProtocolError
+from cachica.datastore import DataStore
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -16,27 +17,41 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def handle_client(reader: StreamReader, writer: StreamWriter):
+async def handle_client(datastore: DataStore, reader: StreamReader, writer: StreamWriter):
     addr = writer.get_extra_info("peername")
     logger.info(f"Client connected from: {addr}")
-    parser = protocol.Parser()
-    ds = datastore.DataStore()  
+
+    parser = Parser()
+
     try:
-        while True:
+        while not reader.at_eof():
             data = await reader.read(1024)
+            if not data:
+                break
+
             parser.feed(data)
             # pdb.set_trace()
-            command = parser.get_command()
-            if command:
-                print(f"`{command}` sent for processing")
-                res = ds.process(command)
-                writer.write(res.encode('ascii'))
-            if reader.at_eof():
-                break
+
+            while True:
+                command = parser.get_command()
+                if command is None:
+                    break
+
+                logger.info(f"Processing command: {command}")
+
+                response = datastore.process(command)
+
+                writer.write(response)
+                await writer.drain()
+
     except ConnectionResetError:
         logger.warning(f"Connection reset by client {addr}")
+    except ProtocolError as e:
+        logger.error(f"Protocol Error from {addr}: {e}")
+        writer.write(f"-ERR {e}\r\n".encode("utf-8"))
+        await writer.drain()
     except Exception as e:
-        logger.critical(f"Parsing failed: {e}")
+        logger.exception(f"An unexpected error occurred with client {addr}: {e}")
     finally:
         logger.info(f"Closing the connection with {addr}")
         writer.close()
@@ -44,7 +59,10 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
 
 
 async def run_server():
-    server = await asyncio.start_server(handle_client, "0.0.0.0", 8888)
+    datastore = DataStore()
+    client_handler = functools.partial(handle_client, datastore)
+
+    server = await asyncio.start_server(client_handler, "0.0.0.0", 8888)
 
     addr = server.sockets[0].getsockname()
     logger.info(f"Serving on {addr}")
@@ -52,6 +70,13 @@ async def run_server():
     async with server:
         await server.serve_forever()
 
+def main():
+    """The synchronous entry point for the application script."""
+    try:
+        asyncio.run(run_server())
+    except KeyboardInterrupt:
+        logger.info("Server shutting down.")
 
 if __name__ == "__main__":
-    asyncio.run(run_server())
+    main()
+

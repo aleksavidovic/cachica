@@ -1,104 +1,125 @@
-import collections
+from collections import deque
 import logging
 import pdb
-from asyncio import StreamReader
-from collections import deque
 
 logger = logging.getLogger(__name__)
-RESP_DELIMITER = b"\r\n"
-SUPPORTED_RESP_COMMANDS = (
-    "SET",
-    "GET",
-    "PING",
-    "ECHO",
-)  # I will expand the list once I implement these
 
-HAS_SECOND_WORD = ("CLIENT",)  # A list of first word of two-word commands
-# so i can parse one more if match is found
-# This is just a placeholder for an idea,
-# I might take a different approach
+CRLF = b'\r\n' # Standard RESP terminator
 
-
-class BadRequest(Exception):
-    pass
-
-
-class UnknownCommandCode(Exception):
+class ProtocolError(Exception):
     pass
 
 class Parser:
+    """A synchronous, stateful RESP parser."""
+
     def __init__(self) -> None:
-        self.buffer = [] 
+        self._buffer = bytearray()
+        self._commands = deque() 
 
-    def feed(self, data: bytes):
-        if data:
-            self.buffer.extend(data.strip().decode("ascii").splitlines())
-        print(self.buffer)
+    def feed(self, data: bytes) -> None:
+        """Adds raw network data to the internal buffer."""
+        self._buffer.extend(data)
+        self._try_parse()
 
-    def get_command(self):
-        msg_type = self.buffer[0][0]
-        if msg_type == "*":
-            arr_len = int(self.buffer[0][1:])
-            print(f"Array of len {arr_len} expected") 
-            if arr_len * 2 != len(self.buffer[1:]):
-                print("Incorrect message length")
-                return None
-            command_elements =  list(zip(self.buffer[1::2], self.buffer[2::2]))
-            print(command_elements)
-            for m, d in command_elements:
-                if not self.validate_el(m, d):
-                    raise(BadRequest(f"Invalid value: {m} {d}"))
-        for word in self.buffer:
-            print(word)
-        resp = self.buffer[2::2]
-        self.buffer = []
-        return resp
-        
-    def validate_el(self, meta, data):
-        print(f"meta: {meta}")
-        print(f"data: {data}")
-        if int(meta[1:]) == len(data):
-            return True
-        else:
-            return False
-
-async def parse_request_from_stream_reader(reader: StreamReader) -> deque | None:
-    header = await reader.readline()
-    logger.debug(f"header: {header}")
-    req_type = header[0]
-    pdb.set_trace()
-    if req_type is None:
+    def get_command(self) -> list[str] | None:
+        """Returns a fully parsed command, or None if none are ready."""
+        if self._commands:
+            return self._commands.popleft()
         return None
-    if req_type != 42:  # 42 is ascii for *
-        raise BadRequest("Commands must start with b'*'")
-    arr_len = int(header[1:-2])
-    command_dq = deque(maxlen=arr_len)
+        
+    def _try_parse(self):
+        """
+        Internal method to parse as many full commands from the buffer as possible.
+        This is the core of the state machine.
+        """
+        while True:
+            # Keep parsing until the buffer is exhausted or an incomplete command is found.
+            if not self._buffer:
+                break
+            
+            # Find the position of the first delimiter
+            first_crlf_pos = self._buffer.find(CRLF)
+            if first_crlf_pos == -1:
+                # Not even a full line in the buffer yet, wait for more data.
+                break
 
-    command_desc = await reader.readline()
-    if command_desc[0] != 36:  # 36 is ascii for $
-        raise BadRequest("Command name must be a bulk string ($)")
-    command_strlen = int(command_desc[1:-2])
-    command_bytes = await reader.readexactly(command_strlen + 2)  # +2 for CRLF
-    command_name = command_bytes[:-2].decode("ascii").upper()
-    if (
-        len(command_name) != command_strlen
-    ) or command_name not in SUPPORTED_RESP_COMMANDS:
-        raise BadRequest(f"Invalid command: {command_name}")
-    command_dq.append(command_name)
-    match command_name:
-        case "SET":
-            return await parse_resp_set(reader, command_dq)
-        case "PING":
-            return await parse_resp_ping(reader, command_dq)
-        case _:
-            raise BadRequest(f"No match for command `{command_name}`.")
+            first_byte = self._buffer[0:1]
 
+            if first_byte == b"*":
+                # It's an array, the start of a command.
+                command, consumed_bytes = self._parse_array(self._buffer)
+                if command is None:
+                    # The full array data isn't in the buffer yet.
+                    break
+                
+                # A full command was parsed. Add it to our queue.
+                self._commands.append(command)
+                # And remove the consumed bytes from the buffer.
+                self._buffer = self._buffer[consumed_bytes:]
+            else:
+                # For now, we only support arrays as the top-level type for commands.
+                # In a real Redis parser, you would handle other types here too.
+                raise ProtocolError(f"Unsupported request type: {first_byte!r}")
 
-async def parse_resp_set(reader: StreamReader, command_dq: collections.deque):
-    command_dq.extend(("dummy_key", "dummy_value"))
-    return command_dq
+    def _parse_array(self, buffer: bytearray) -> tuple[list[str] | None, int]:
+        """
+        Parses a RESP array from the buffer.
+        Returns the parsed array and the number of bytes consumed.
+        If the command is incomplete, returns (None, 0).
+        """
+        first_crlf_pos = buffer.find(CRLF)
+        line = buffer[1:first_crlf_pos]
+        
+        try:
+            array_len = int(line)
+        except ValueError:
+            raise ProtocolError(f"Invalid array length: {line!r}")
+        
+        command_parts = []
+        current_pos = first_crlf_pos + len(CRLF)
 
+        for _ in range(array_len):
+            # Try to parse one bulk string for each element in the array.
+            element, consumed = self._parse_bulk_string(buffer[current_pos:])
+            if element is None:
+                # The buffer doesn't contain the full bulk string yet.
+                return None, 0
+            
+            command_parts.append(element)
+            current_pos += consumed
+        
+        # If we get here, the full command was parsed successfully.
+        return command_parts, current_pos
 
-async def parse_resp_ping(reader: StreamReader, command_dq):
-    command_dq.append("dummy text")
-    return command_dq
+    def _parse_bulk_string(self, buffer: bytearray) -> tuple[str | None, int]:
+        """
+        Parses a single RESP Bulk String.
+        Returns the string and the number of bytes consumed.
+        """
+        first_crlf_pos = buffer.find(CRLF)
+        if first_crlf_pos == -1:
+            return None, 0
+
+        line = buffer[1:first_crlf_pos]
+
+        try:
+            str_len = int(line)
+        except ValueError:
+            raise ProtocolError(f"Invalid bulk string length: {line!r}")
+        
+        # The bulk string data starts after the CRLF of its length prefix
+        str_start = first_crlf_pos + len(CRLF)
+        str_end = str_start + str_len
+
+        # Check if the full bulk string data (including its final CRLF) is in the buffer
+        if len(buffer) < str_end + len(CRLF):
+            return None, 0
+        
+        # Extract the bulk string and decode it
+        bulk_str = buffer[str_start:str_end].decode("utf-8")
+        
+        # Total bytes consumed is the end of the string + its final CRLF
+        consumed_bytes = str_end + len(CRLF)
+        
+        return bulk_str, consumed_bytes
+
