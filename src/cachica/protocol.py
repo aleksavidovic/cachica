@@ -26,6 +26,26 @@ class BadRequest(Exception):
 class UnknownCommandCode(Exception):
     pass
 
+class Parser:
+    def __init__(self) -> None:
+        self.buffer = [] 
+
+    def feed(self, data: bytes):
+        if data:
+            self.buffer.extend(data.strip().decode("ascii").splitlines())
+        print(self.buffer)
+
+    def get_command(self):
+        msg_type = self.buffer[0][0]
+        if msg_type == "*":
+            arr_len = int(self.buffer[0][1:])
+            print(f"Array of len {arr_len} expected") 
+            if arr_len * 2 != len(self.buffer[1:]):
+                print("Incorrect message length")
+                return None
+        for word in self.buffer:
+            print(word)
+        return self.buffer[2::2] 
 
 async def parse_request_from_stream_reader(reader: StreamReader) -> deque | None:
     header = await reader.readline()

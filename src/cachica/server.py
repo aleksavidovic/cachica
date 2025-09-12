@@ -1,9 +1,10 @@
+import pdb
 import asyncio
 import logging
 from asyncio import StreamReader, StreamWriter
 from collections import deque
 
-from protocol import BadRequest, parse_request_from_stream_reader
+import protocol 
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -17,22 +18,21 @@ logger = logging.getLogger(__name__)
 async def handle_client(reader: StreamReader, writer: StreamWriter):
     addr = writer.get_extra_info("peername")
     logger.info(f"Client connected from: {addr}")
-
+    parser = protocol.Parser()
     try:
-        # Loop indefinitely to handle multiple commands from the same client
         while True:
-            command_dq: deque | None = await parse_request_from_stream_reader(reader)
-            if command_dq is None:
+            data = await reader.read(1024)
+            parser.feed(data)
+            # pdb.set_trace()
+            command = parser.get_command()
+            if command:
+                print(command)
+            if reader.at_eof():
                 break
-            command_str = " ".join(command_dq)
-            writer.write(command_str.encode(encoding="ascii"))
-            await writer.drain()
-            logger.info(f"Echoed '{command_str}' back to {addr}")
-
     except ConnectionResetError:
         logger.warning(f"Connection reset by client {addr}")
-    except BadRequest:
-        logger.critical("Request must start with b'*'")
+    except Exception as e:
+        logger.critical(f"Parsing failed: {e}")
     finally:
         logger.info(f"Closing the connection with {addr}")
         writer.close()
