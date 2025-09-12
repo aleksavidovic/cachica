@@ -5,6 +5,7 @@ from asyncio import StreamReader, StreamWriter
 from collections import deque
 
 import protocol 
+import datastore
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -19,6 +20,7 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
     addr = writer.get_extra_info("peername")
     logger.info(f"Client connected from: {addr}")
     parser = protocol.Parser()
+    ds = datastore.DataStore()  
     try:
         while True:
             data = await reader.read(1024)
@@ -26,7 +28,9 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
             # pdb.set_trace()
             command = parser.get_command()
             if command:
-                print(command)
+                print(f"`{command}` sent for processing")
+                res = ds.process(command)
+                writer.write(res.encode('ascii'))
             if reader.at_eof():
                 break
     except ConnectionResetError:

@@ -50,7 +50,9 @@ class Parser:
                     raise(BadRequest(f"Invalid value: {m} {d}"))
         for word in self.buffer:
             print(word)
-        return self.buffer[2::2] 
+        resp = self.buffer[2::2]
+        self.buffer = []
+        return resp
         
     def validate_el(self, meta, data):
         print(f"meta: {meta}")
