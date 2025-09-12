@@ -23,13 +23,13 @@ This project will be developed in distinct phases, with clear objectives for eac
 
 **Goal**: Establish a stable `asyncio` TCP server capable of receiving and parsing basic commands using a RESP-like protocol.
 
-* [ ] Initialize `asyncio` event loop and start a TCP server.
-* [ ] Implement a basic `ConnectionHandler` to manage individual client connections.
-* [ ] Develop a `ProtocolParser` to read incoming bytes from the client stream.
-* [ ] Implement parsing for RESP Simple Strings and Bulk Strings.
-* [ ] Successfully parse a `PING` command and send back a `PONG`.
+* [x] Initialize `asyncio` event loop and start a TCP server.
+* [x] Implement a basic `ConnectionHandler` to manage individual client connections.
+* [x] Develop a `ProtocolParser` to read incoming bytes from the client stream.
+* [x] Implement parsing for RESP Simple Strings and Bulk Strings.
+* [x] Successfully parse a `PING` command and send back a `PONG`.
 * [ ] Successfully parse `ECHO "message"` and send back the message.
-* [ ] Basic logging for server events and client interactions.
+* [x] Basic logging for server events and client interactions.
 
 ### Phase 2: The Core Engine (In-Memory Store & Basic Commands)
 
