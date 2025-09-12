@@ -1,20 +1,21 @@
-from collections import deque
 import logging
-import pdb
+from collections import deque
 
 logger = logging.getLogger(__name__)
 
-CRLF = b'\r\n' # Standard RESP terminator
+CRLF = b"\r\n"  # Standard RESP terminator
+
 
 class ProtocolError(Exception):
     pass
+
 
 class Parser:
     """A synchronous, stateful RESP parser."""
 
     def __init__(self) -> None:
         self._buffer = bytearray()
-        self._commands = deque() 
+        self._commands = deque()
 
     def feed(self, data: bytes) -> None:
         """Adds raw network data to the internal buffer."""
@@ -26,17 +27,17 @@ class Parser:
         if self._commands:
             return self._commands.popleft()
         return None
-        
+
     def _try_parse(self):
         """
         Internal method to parse as many full commands from the buffer as possible.
         This is the core of the state machine.
         """
         while True:
-            # Keep parsing until the buffer is exhausted or an incomplete command is found.
+            # Parsing until the buffer is exhausted or an incomplete command is found.
             if not self._buffer:
                 break
-            
+
             # Find the position of the first delimiter
             first_crlf_pos = self._buffer.find(CRLF)
             if first_crlf_pos == -1:
@@ -51,7 +52,7 @@ class Parser:
                 if command is None:
                     # The full array data isn't in the buffer yet.
                     break
-                
+
                 # A full command was parsed. Add it to our queue.
                 self._commands.append(command)
                 # And remove the consumed bytes from the buffer.
@@ -69,12 +70,12 @@ class Parser:
         """
         first_crlf_pos = buffer.find(CRLF)
         line = buffer[1:first_crlf_pos]
-        
+
         try:
             array_len = int(line)
         except ValueError:
-            raise ProtocolError(f"Invalid array length: {line!r}")
-        
+            raise ProtocolError(f"Invalid array length: {line!r}") from None
+
         command_parts = []
         current_pos = first_crlf_pos + len(CRLF)
 
@@ -84,10 +85,10 @@ class Parser:
             if element is None:
                 # The buffer doesn't contain the full bulk string yet.
                 return None, 0
-            
+
             command_parts.append(element)
             current_pos += consumed
-        
+
         # If we get here, the full command was parsed successfully.
         return command_parts, current_pos
 
@@ -105,8 +106,8 @@ class Parser:
         try:
             str_len = int(line)
         except ValueError:
-            raise ProtocolError(f"Invalid bulk string length: {line!r}")
-        
+            raise ProtocolError(f"Invalid bulk string length: {line!r}") from None
+
         # The bulk string data starts after the CRLF of its length prefix
         str_start = first_crlf_pos + len(CRLF)
         str_end = str_start + str_len
@@ -114,12 +115,11 @@ class Parser:
         # Check if the full bulk string data (including its final CRLF) is in the buffer
         if len(buffer) < str_end + len(CRLF):
             return None, 0
-        
+
         # Extract the bulk string and decode it
         bulk_str = buffer[str_start:str_end].decode("utf-8")
-        
+
         # Total bytes consumed is the end of the string + its final CRLF
         consumed_bytes = str_end + len(CRLF)
-        
-        return bulk_str, consumed_bytes
 
+        return bulk_str, consumed_bytes

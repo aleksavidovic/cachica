@@ -1,12 +1,10 @@
-import pdb
 import asyncio
-import logging
 import functools
+import logging
 from asyncio import StreamReader, StreamWriter
-from collections import deque
 
-from cachica.protocol import Parser, ProtocolError
 from cachica.datastore import DataStore
+from cachica.protocol import Parser, ProtocolError
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -17,7 +15,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def handle_client(datastore: DataStore, reader: StreamReader, writer: StreamWriter):
+async def handle_client(
+    datastore: DataStore, reader: StreamReader, writer: StreamWriter
+):
     addr = writer.get_extra_info("peername")
     logger.info(f"Client connected from: {addr}")
 
@@ -70,6 +70,7 @@ async def run_server():
     async with server:
         await server.serve_forever()
 
+
 def main():
     """The synchronous entry point for the application script."""
     try:
@@ -77,6 +78,6 @@ def main():
     except KeyboardInterrupt:
         logger.info("Server shutting down.")
 
+
 if __name__ == "__main__":
     main()
-

@@ -8,10 +8,10 @@ class DataStore:
         """
         if not command:
             return b"-ERR empty command\r\n"
-        
+
         command_name = command[0].upper()
         args = command[1:]
-        
+
         # This is our command dispatcher.
         match command_name:
             case "PING":
@@ -30,7 +30,7 @@ class DataStore:
                 key, value = args
                 self._set(key, value)
                 return b"+OK\r\n"
-            
+
             case "GET":
                 if len(args) != 1:
                     return b"-ERR wrong number of arguments for 'get' command\r\n"
@@ -50,4 +50,3 @@ class DataStore:
 
     def _get(self, key: str) -> str | None:
         return self._data.get(key)
-
