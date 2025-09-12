@@ -43,9 +43,22 @@ class Parser:
             if arr_len * 2 != len(self.buffer[1:]):
                 print("Incorrect message length")
                 return None
+            command_elements =  list(zip(self.buffer[1::2], self.buffer[2::2]))
+            print(command_elements)
+            for m, d in command_elements:
+                if not self.validate_el(m, d):
+                    raise(BadRequest(f"Invalid value: {m} {d}"))
         for word in self.buffer:
             print(word)
         return self.buffer[2::2] 
+        
+    def validate_el(self, meta, data):
+        print(f"meta: {meta}")
+        print(f"data: {data}")
+        if int(meta[1:]) == len(data):
+            return True
+        else:
+            return False
 
 async def parse_request_from_stream_reader(reader: StreamReader) -> deque | None:
     header = await reader.readline()
