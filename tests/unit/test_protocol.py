@@ -3,7 +3,6 @@ import pytest
 pytestmark = pytest.mark.skip(reason="Module temporarily disabled")
 
 
-
 def test_parse_ping_command():
     # assert parse_command(b"PING\r\n") == ("PING")
     assert True
