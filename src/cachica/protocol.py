@@ -131,7 +131,7 @@ def encode_simple_string(string: str) -> bytes:
 
 def encode_bulk_string(string: str | None) -> bytes:
     if not string:
-        return b"-1\r\n"
+        return b"$-1\r\n"
     return f"${len(string)}\r\n{string}\r\n".encode()
 
 

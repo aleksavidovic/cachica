@@ -75,8 +75,8 @@ This project will be developed in distinct phases, with clear objectives for eac
 **Goal**: Finalize the project with professional tooling, documentation, and a robust testing suite.
 
 * [ ] Create a simple Python client library to interact with CachePy.
-* [ ] Containerize CachePy using Docker.
-* [ ] Set up GitHub Actions for Continuous Integration (CI) to run tests automatically.
+* [x] Containerize CachePy using Docker.
+* [x] Set up GitHub Actions for Continuous Integration (CI) to run tests automatically.
 * [ ] Enhance logging with structured logging (e.g., `logging.config.dictConfig`).
 * [ ] Improve `README.md` with architectural diagrams and detailed usage instructions.
 * [ ] Add comprehensive docstrings to all functions and classes.

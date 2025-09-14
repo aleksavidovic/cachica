@@ -88,7 +88,7 @@ def test_get_key_not_found(populated_datastore_factory):
     command = ["GET", "name"]
     datastore = populated_datastore_factory({"app": "cachica"})
     resp = datastore.process(command)
-    assert resp == b"-1\r\n"
+    assert resp == b"$-1\r\n"
 
 
 def test_get_no_args_returns_error(datastore):
