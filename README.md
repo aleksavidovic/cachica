@@ -19,7 +19,7 @@ This project serves as a foundational step towards building more complex distrib
 
 This project will be developed in distinct phases, with clear objectives for each.
 
-### Phase 1: The Network Foundation (Core Server & Basic Protocol)
+### Phase 1: The Network Foundation (Core Server & Basic Protocol) ✅
 
 **Goal**: Establish a stable `asyncio` TCP server capable of receiving and parsing basic commands using a RESP-like protocol.
 
@@ -28,17 +28,17 @@ This project will be developed in distinct phases, with clear objectives for eac
 * [x] Develop a `ProtocolParser` to read incoming bytes from the client stream.
 * [x] Implement parsing for RESP Simple Strings and Bulk Strings.
 * [x] Successfully parse a `PING` command and send back a `PONG`.
-* [ ] Successfully parse `ECHO "message"` and send back the message.
+* [x] Successfully parse `ECHO "message"` and send back the message.
 * [x] Basic logging for server events and client interactions.
 
-### Phase 2: The Core Engine (In-Memory Store & Basic Commands)
+### Phase 2: The Core Engine (In-Memory Store & Basic Commands) ◀️
 
 **Goal**: Implement the central in-memory data store and handlers for fundamental key-value operations.
 
-* [ ] Create a `DataStore` class (using a Python `dict` initially) to hold all key-value pairs.
+* [x] Create a `DataStore` class (using a Python `dict` initially) to hold all key-value pairs.
 * [ ] Implement a `CommandHandler` to dispatch parsed commands to the correct `DataStore` methods.
-* [ ] Implement `SET key value` functionality, storing the key-value pair in the `DataStore`.
-* [ ] Implement `GET key` functionality, retrieving a value or returning `None` if the key doesn't exist.
+* [x] Implement `SET key value` functionality, storing the key-value pair in the `DataStore`.
+* [x] Implement `GET key` functionality, retrieving a value or returning `None` if the key doesn't exist.
 * [ ] Implement `DEL key` functionality, removing a key-value pair.
 * [ ] Ensure `DataStore` operations are thread-safe if multi-threading is introduced later (or explicitly mention `asyncio`'s single-threaded nature in this context).
 * [ ] Write unit tests for `DataStore` operations.
