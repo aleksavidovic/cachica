@@ -58,7 +58,7 @@ class DataStore:
                     # RESP Null
                     return protocol.encode_bulk_string()
                 else:
-                    return protocol.encode_bulk_string(value) 
+                    return protocol.encode_bulk_string(value)
 
             case _:
                 return protocol.encode_simple_error(f"unknown command `{command_name}`", error_prefix="ERR")
