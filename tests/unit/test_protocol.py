@@ -61,10 +61,12 @@ def test_encode_bulk_string():
     res = protocol.encode_bulk_string(bulk_string)
     assert res == b"$11\r\nhello world\r\n"
 
+
 def test_encode_positive_integer():
     res = protocol.encode_integer(27)
-    assert res == b':27\r\n'
+    assert res == b":27\r\n"
+
 
 def test_encode_negative_integer():
     res = protocol.encode_integer(-420)
-    assert res == b':-420\r\n'
+    assert res == b":-420\r\n"

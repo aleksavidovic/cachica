@@ -134,8 +134,10 @@ def encode_bulk_string(string: str | None) -> bytes:
         return b"-1\r\n"
     return f"${len(string)}\r\n{string}\r\n".encode()
 
+
 def encode_integer(integer: int) -> bytes:
     return f":{integer}\r\n".encode()
+
 
 def encode_simple_error(error_message, error_prefix="ERR") -> bytes:
     return f"-{error_prefix} {error_message}\r\n".encode()
