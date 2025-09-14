@@ -40,7 +40,7 @@ def main():
                         client.SET(*prompt[1:])
                     case 5:
                         if prompt[3].upper() in ("PX", "EX") and prompt[4].isdigit():
-                            client.SET(*prompt[1:]) 
+                            client.SET(*prompt[1:])
                     case _:
                         print("Incorrect args for 'set' command")
                         continue

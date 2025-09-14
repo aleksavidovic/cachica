@@ -5,7 +5,7 @@ from cachica import protocol
 
 class DataStore:
     def __init__(self):
-        self._data = {}
+        self._data: dict[str, tuple[str, float | None]] = {}
         self._commands = {
             "PING": self._handle_ping,
             "ECHO": self._handle_echo,
@@ -36,7 +36,7 @@ class DataStore:
             return protocol.encode_simple_error("wrong number of arguments for 'set' command", error_prefix="ERR")
         if len(args) == 2:
             key, value = args
-            default_ttl = None # Set a value that denotes no expiration
+            default_ttl = None  # Set a value that denotes no expiration
             self._set(key, (value, default_ttl))
         elif len(args) == 4:
             (key, value, expire_type, expire_value) = args
@@ -45,7 +45,7 @@ class DataStore:
                 if expire_type == "EX":
                     ttl = time.time() + int(expire_value)
                 elif expire_type == "PX":
-                    ttl = time.time() + (int(expire_value) / 1000) # /1000 to get s from ms
+                    ttl = time.time() + (int(expire_value) / 1000)  # /1000 to get s from ms
                 self._set(key, (value, ttl))
             else:
                 return protocol.encode_simple_error("Incorrect args")
@@ -55,12 +55,16 @@ class DataStore:
         if len(args) != 1:
             return protocol.encode_simple_error("wrong number of arguments for 'get' command", error_prefix="ERR")
         key = args[0]
-        value = self._get(key)
+        value: tuple[str, float | None] | None = self._get(key)
         if value is None:
             # RESP Null
             return protocol.encode_bulk_string(None)
         else:
-            return protocol.encode_bulk_string(value)
+            if value[1] is None or (value[1] > time.time()):
+                return protocol.encode_bulk_string(value[0])
+            else:
+                return protocol.encode_bulk_string(None)
+        return protocol.encode_bulk_string(value)
 
     def _handle_del(self, args: list) -> bytes:
         if len(args) == 0:
@@ -90,5 +94,5 @@ class DataStore:
     def _set(self, key: str, value: tuple[str, float | None]):
         self._data[key] = value
 
-    def _get(self, key: str) -> str | None:
+    def _get(self, key: str) -> tuple[str, float | None] | None:
         return self._data.get(key)
