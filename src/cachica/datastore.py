@@ -40,7 +40,7 @@ class DataStore:
             self._set(key, (value, default_ttl))
         elif len(args) == 4:
             (key, value, expire_type, expire_value) = args
-            if expire_type in ("EX", "PX") and expire_value.is_digit():
+            if expire_type in ("EX", "PX") and expire_value.isdigit():
                 ttl = None
                 if expire_type == "EX":
                     ttl = time.time() + int(expire_value)
@@ -63,8 +63,8 @@ class DataStore:
             if value[1] is None or (value[1] > time.time()):
                 return protocol.encode_bulk_string(value[0])
             else:
+                self._data[key]
                 return protocol.encode_bulk_string(None)
-        return protocol.encode_bulk_string(value)
 
     def _handle_del(self, args: list) -> bytes:
         if len(args) == 0:
