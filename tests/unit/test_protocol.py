@@ -39,3 +39,18 @@ def test_parse_set(parser, req, expected):
 def test_encode_simple_string(string, encoded):
     res = protocol.encode_simple_string(string)
     assert res == encoded
+
+
+@pytest.mark.parametrize(
+    "error_message, error_prefix, expected",
+    [
+        (
+            "wrong number of arguments for 'echo' command",
+            "ERR",
+            b"-ERR wrong number of arguments for 'echo' command\r\n",
+        ),
+    ],
+)
+def test_encode_simple_error_with_provided_prefix(error_message, error_prefix, expected):
+    error_response = protocol.encode_simple_error(error_message, error_prefix=error_prefix)
+    assert error_response == expected

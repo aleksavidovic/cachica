@@ -25,25 +25,33 @@ class DataStore:
                     message = args[0]
                     return f"${len(message)}\r\n{message}\r\n".encode()
                 else:
-                    return b"-ERR wrong number of arguments for 'ping' command\r\n"
+                    return protocol.encode_simple_error(
+                        "wrong number of arguments for 'ping' command", error_prefix="ERR"
+                    )
 
             case "ECHO":
                 if len(args) != 1:
-                    return b"-ERR wrong number of arguments for 'ping' command\r\n"
+                    return protocol.encode_simple_error(
+                        "wrong number of arguments for 'ping' command", error_prefix="ERR"
+                    )
 
                 message = args[0]
                 return f"${len(message)}\r\n{message}\r\n".encode()
 
             case "SET":
                 if len(args) != 2:
-                    return b"-ERR wrong number of arguments for 'set' command\r\n"
+                    return protocol.encode_simple_error(
+                        "wrong number of arguments for 'set' command", error_prefix="ERR"
+                    )
                 key, value = args
                 self._set(key, value)
                 return protocol.encode_simple_string("OK")
 
             case "GET":
                 if len(args) != 1:
-                    return b"-ERR wrong number of arguments for 'get' command\r\n"
+                    return protocol.encode_simple_error(
+                        "wrong number of arguments for 'get' command", error_prefix="ERR"
+                    )
                 key = args[0]
                 value = self._get(key)
                 if value is None:

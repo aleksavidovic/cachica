@@ -127,3 +127,7 @@ class Parser:
 
 def encode_simple_string(string: str) -> bytes:
     return f"+{string}\r\n".encode()
+
+
+def encode_simple_error(error_message, error_prefix="ERR"):
+    return f"-{error_prefix} {error_message}\r\n".encode()
