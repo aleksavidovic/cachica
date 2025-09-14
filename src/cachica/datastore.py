@@ -1,4 +1,5 @@
 from cachica import protocol
+import time
 
 
 class DataStore:
@@ -30,10 +31,18 @@ class DataStore:
         return protocol.encode_bulk_string(message)
 
     def _handle_set(self, args: list) -> bytes:
-        if len(args) != 2:
+        if len(args) not in (2, 4):
             return protocol.encode_simple_error("wrong number of arguments for 'set' command", error_prefix="ERR")
-        key, value = args
-        self._set(key, value)
+        if len(args) == 2:
+            key, value = args
+            ttl_timestamp = time.time() # Set a value that denotes no expiration
+            self._set(key, (value, ttl_timestamp))
+        elif len(args) == 4:
+            key, value = args
+            if args[2] not in ("EX", "PX"):
+                return protocol.encode_simple_error("Incorrect args")
+            ttl_timestamp = time.time()
+            self._set(key, (value, ttl_timestamp))
         return protocol.encode_simple_string("OK")
 
     def _handle_get(self, args: list) -> bytes:
@@ -72,7 +81,7 @@ class DataStore:
         else:
             return protocol.encode_simple_error(f"unknown command '{command_name}'", error_prefix="ERR")
 
-    def _set(self, key: str, value: str):
+    def _set(self, key: str, value: tuple[str, float]):
         self._data[key] = value
 
     def _get(self, key: str) -> str | None:
