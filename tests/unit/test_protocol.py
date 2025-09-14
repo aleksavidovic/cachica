@@ -1,5 +1,6 @@
 import pytest
 
+from cachica import protocol
 from cachica.protocol import Parser
 
 
@@ -32,3 +33,9 @@ def test_parse_echo_command(parser, req, expected):
 def test_parse_set(parser, req, expected):
     parser.feed(req)
     assert parser.get_command() == expected
+
+
+@pytest.mark.parametrize("string, encoded", [("PONG", b"+PONG\r\n"), ("OK", b"+OK\r\n")])
+def test_encode_simple_string(string, encoded):
+    res = protocol.encode_simple_string(string)
+    assert res == encoded

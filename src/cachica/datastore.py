@@ -1,3 +1,6 @@
+from cachica import protocol
+
+
 class DataStore:
     def __init__(self):
         self._data = {}
@@ -16,7 +19,7 @@ class DataStore:
         match command_name:
             case "PING":
                 if len(args) == 0:
-                    return b"+PONG\r\n"
+                    return protocol.encode_simple_string("PONG")
                 elif len(args) == 1:
                     # Return the argument as a bulk string
                     message = args[0]
@@ -36,7 +39,7 @@ class DataStore:
                     return b"-ERR wrong number of arguments for 'set' command\r\n"
                 key, value = args
                 self._set(key, value)
-                return b"+OK\r\n"
+                return protocol.encode_simple_string("OK")
 
             case "GET":
                 if len(args) != 1:

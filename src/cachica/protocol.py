@@ -123,3 +123,7 @@ class Parser:
         consumed_bytes = str_end + len(CRLF)
 
         return bulk_str, consumed_bytes
+
+
+def encode_simple_string(string: str) -> bytes:
+    return f"+{string}\r\n".encode()
