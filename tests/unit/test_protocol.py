@@ -13,9 +13,13 @@ def test_parse_ping_command(parser):
     assert parser.get_command() == ["PING"]
 
 
-def test_parse_echo_command(parser):
-    # assert parse_command(b"ECHO\r\n") == ("ECHO")
-    assert True
+@pytest.mark.parametrize(
+    "req, expected",
+    [(b"*1\r\n$4\r\nECHO\r\n", ["ECHO"]), (b"*2\r\n$4\r\nECHO\r\n$5\r\nhello\r\n", ["ECHO", "hello"])],
+)
+def test_parse_echo_command(parser, req, expected):
+    parser.feed(req)
+    assert parser.get_command() == expected
 
 
 @pytest.mark.parametrize(
