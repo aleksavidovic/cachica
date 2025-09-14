@@ -24,7 +24,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 # Set the minimum Python version to target for compatibility.
 target-version = "py311" # Corrected this to match your python requirement
-line-length = 88
+line-length = 120
 
 [tool.ruff.lint]
 # A good starting set of rules:
