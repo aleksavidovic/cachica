@@ -4,6 +4,55 @@ from cachica import protocol
 class DataStore:
     def __init__(self):
         self._data = {}
+        self._commands = {
+            "PING": self._handle_ping,
+            "ECHO": self._handle_echo,
+            "SET": self._handle_set,
+            "GET": self._handle_get
+        }   
+
+    def _handle_ping(self, args=[]) -> bytes:
+        if len(args) == 0:
+            return protocol.encode_simple_string("PONG")
+        elif len(args) == 1:
+            # Return the argument as a bulk string
+            message = args[0]
+            return protocol.encode_bulk_string(message)
+        else:
+            return protocol.encode_simple_error(
+                "wrong number of arguments for 'ping' command", error_prefix="ERR"
+            )
+
+    def _handle_echo(self, args=[]) -> bytes:
+        if len(args) != 1:
+            return protocol.encode_simple_error(
+                "wrong number of arguments for 'ping' command", error_prefix="ERR"
+            )
+
+        message = args[0]
+        return protocol.encode_bulk_string(message)
+
+    def _handle_set(self, args=[]) -> bytes:
+        if len(args) != 2:
+            return protocol.encode_simple_error(
+                "wrong number of arguments for 'set' command", error_prefix="ERR"
+            )
+        key, value = args
+        self._set(key, value)
+        return protocol.encode_simple_string("OK")
+
+    def _handle_get(self, args=[]) -> bytes:
+        if len(args) != 1:
+            return protocol.encode_simple_error(
+                "wrong number of arguments for 'get' command", error_prefix="ERR"
+            )
+        key = args[0]
+        value = self._get(key)
+        if value is None:
+            # RESP Null
+            return protocol.encode_bulk_string(None)
+        else:
+            return protocol.encode_bulk_string(value)
 
     def process(self, command: list[str]) -> bytes:
         """
@@ -14,54 +63,11 @@ class DataStore:
 
         command_name = command[0].upper()
         args = command[1:]
-
-        # This is our command dispatcher.
-        match command_name:
-            case "PING":
-                if len(args) == 0:
-                    return protocol.encode_simple_string("PONG")
-                elif len(args) == 1:
-                    # Return the argument as a bulk string
-                    message = args[0]
-                    return protocol.encode_bulk_string(message)
-                else:
-                    return protocol.encode_simple_error(
-                        "wrong number of arguments for 'ping' command", error_prefix="ERR"
-                    )
-
-            case "ECHO":
-                if len(args) != 1:
-                    return protocol.encode_simple_error(
-                        "wrong number of arguments for 'ping' command", error_prefix="ERR"
-                    )
-
-                message = args[0]
-                return protocol.encode_bulk_string(message)
-
-            case "SET":
-                if len(args) != 2:
-                    return protocol.encode_simple_error(
-                        "wrong number of arguments for 'set' command", error_prefix="ERR"
-                    )
-                key, value = args
-                self._set(key, value)
-                return protocol.encode_simple_string("OK")
-
-            case "GET":
-                if len(args) != 1:
-                    return protocol.encode_simple_error(
-                        "wrong number of arguments for 'get' command", error_prefix="ERR"
-                    )
-                key = args[0]
-                value = self._get(key)
-                if value is None:
-                    # RESP Null
-                    return protocol.encode_bulk_string()
-                else:
-                    return protocol.encode_bulk_string(value)
-
-            case _:
-                return protocol.encode_simple_error(f"unknown command `{command_name}`", error_prefix="ERR")
+        
+        if command_name in self._commands:
+            return self._commands[command_name](args)
+        else:
+            return protocol.encode_simple_error(f"unknown command `{command_name}`", error_prefix="ERR")
 
     def _set(self, key: str, value: str):
         self._data[key] = value
