@@ -36,10 +36,10 @@ This project will be developed in distinct phases, with clear objectives for eac
 **Goal**: Implement the central in-memory data store and handlers for fundamental key-value operations.
 
 * [x] Create a `DataStore` class (using a Python `dict` initially) to hold all key-value pairs.
-* [ ] Implement a `CommandHandler` to dispatch parsed commands to the correct `DataStore` methods.
+* [x] Implement a `Command Dispatcher` to dispatch parsed commands to the correct `DataStore` methods.
 * [x] Implement `SET key value` functionality, storing the key-value pair in the `DataStore`.
 * [x] Implement `GET key` functionality, retrieving a value or returning `None` if the key doesn't exist.
-* [ ] Implement `DEL key` functionality, removing a key-value pair.
+* [x] Implement `DEL key` functionality, removing a key-value pair.
 * [ ] Ensure `DataStore` operations are thread-safe if multi-threading is introduced later (or explicitly mention `asyncio`'s single-threaded nature in this context).
 * [ ] Write unit tests for `DataStore` operations.
 
