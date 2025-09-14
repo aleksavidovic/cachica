@@ -10,7 +10,7 @@ class DataStore:
         Processes a parsed command and returns a RESP-formatted byte response.
         """
         if not command:
-            return b"-ERR empty command\r\n"
+            return protocol.encode_simple_error("empty command", error_prefix="ERR")
 
         command_name = command[0].upper()
         args = command[1:]
@@ -23,7 +23,7 @@ class DataStore:
                 elif len(args) == 1:
                     # Return the argument as a bulk string
                     message = args[0]
-                    return f"${len(message)}\r\n{message}\r\n".encode()
+                    return protocol.encode_bulk_string(message)
                 else:
                     return protocol.encode_simple_error(
                         "wrong number of arguments for 'ping' command", error_prefix="ERR"
@@ -36,7 +36,7 @@ class DataStore:
                     )
 
                 message = args[0]
-                return f"${len(message)}\r\n{message}\r\n".encode()
+                return protocol.encode_bulk_string(message)
 
             case "SET":
                 if len(args) != 2:
@@ -56,12 +56,12 @@ class DataStore:
                 value = self._get(key)
                 if value is None:
                     # RESP Null
-                    return b"$-1\r\n"
+                    return protocol.encode_bulk_string()
                 else:
-                    return f"${len(value)}\r\n{value}\r\n".encode()
+                    return protocol.encode_bulk_string(value) 
 
             case _:
-                return f"-ERR unknown command `{command_name}`\r\n".encode()
+                return protocol.encode_simple_error(f"unknown command `{command_name}`", error_prefix="ERR")
 
     def _set(self, key: str, value: str):
         self._data[key] = value

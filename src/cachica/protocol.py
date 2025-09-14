@@ -129,5 +129,11 @@ def encode_simple_string(string: str) -> bytes:
     return f"+{string}\r\n".encode()
 
 
-def encode_simple_error(error_message, error_prefix="ERR"):
+def encode_bulk_string(string: str | None) -> bytes:
+    if not string:
+        return b"-1\r\n"
+    return f"${len(string)}\r\n{string}\r\n".encode()
+
+
+def encode_simple_error(error_message, error_prefix="ERR") -> bytes:
     return f"-{error_prefix} {error_message}\r\n".encode()

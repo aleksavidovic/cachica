@@ -54,3 +54,9 @@ def test_encode_simple_string(string, encoded):
 def test_encode_simple_error_with_provided_prefix(error_message, error_prefix, expected):
     error_response = protocol.encode_simple_error(error_message, error_prefix=error_prefix)
     assert error_response == expected
+
+
+def test_encode_bulk_string():
+    bulk_string = "hello world"
+    res = protocol.encode_bulk_string(bulk_string)
+    assert res == b"$11\r\nhello world\r\n"
