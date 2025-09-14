@@ -16,14 +16,14 @@ class Client:
             arr.append(message)
         self._socket.sendall(protocol.encode_array(arr))
 
-    def SET(self, key, value):
-        self._socket.sendall(protocol.encode_array(["SET", key, value]))
+    def SET(self, *args):
+        self._socket.sendall(protocol.encode_array(["SET", *args]))
 
     def GET(self, key):
         self._socket.sendall(protocol.encode_array(["GET", key]))
 
-    def DEL(self, keys):
-        pass
+    def DEL(self, keys: list[str]):
+        self._socket.sendall(protocol.encode_array(["DEL", *keys]))
 
     def recv(self, num_bytes=1024):
         return self._socket.recv(num_bytes)
@@ -35,10 +35,15 @@ def main():
         prompt = input("cachica> ").strip().split(" ")
         match prompt[0].upper():
             case "SET":
-                if len(prompt) != 3:
-                    print("Incorrect number of args for 'set' command")
-                    continue
-                client.SET(*prompt[1:])
+                match len(prompt):
+                    case 3:
+                        client.SET(*prompt[1:])
+                    case 5:
+                        if prompt[3].upper() in ("PX", "EX") and prompt[4].isdigit():
+                            client.SET(*prompt[1:]) 
+                    case _:
+                        print("Incorrect args for 'set' command")
+                        continue
             case "GET":
                 if len(prompt) != 2:
                     print("Incorrect number of args for 'get' command")
@@ -52,6 +57,12 @@ def main():
                     client.PING()
                 else:
                     client.PING(prompt[1])
+            case "DEL":
+                if len(prompt) < 2:
+                    print("Incorrect number of args for 'del' command")
+                    continue
+                else:
+                    client.DEL(prompt[1:])
             case _:
                 print("Unknown command.")
                 continue
