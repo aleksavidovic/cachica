@@ -24,7 +24,7 @@ class DataStore:
 
     def _handle_echo(self, args: list) -> bytes:
         if len(args) != 1:
-            return protocol.encode_simple_error("wrong number of arguments for 'ping' command", error_prefix="ERR")
+            return protocol.encode_simple_error("wrong number of arguments for 'echo' command", error_prefix="ERR")
 
         message = args[0]
         return protocol.encode_bulk_string(message)
@@ -49,7 +49,7 @@ class DataStore:
 
     def _handle_del(self, args: list) -> bytes:
         if len(args) == 0:
-            return protocol.encode_simple_error("wrond number of arguments for 'del' command", error_prefix="ERR")
+            return protocol.encode_simple_error("wrong number of arguments for 'del' command", error_prefix="ERR")
         deleted = 0
         for key in args:
             if key in self._data:
@@ -70,7 +70,7 @@ class DataStore:
         if command_name in self._commands:
             return self._commands[command_name](args)
         else:
-            return protocol.encode_simple_error(f"unknown command `{command_name}`", error_prefix="ERR")
+            return protocol.encode_simple_error(f"unknown command '{command_name}'", error_prefix="ERR")
 
     def _set(self, key: str, value: str):
         self._data[key] = value
