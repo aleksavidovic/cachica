@@ -16,3 +16,8 @@ def test_empty_command(datastore):
 def test_ping(datastore):
     resp = datastore.process(["PING"])
     assert resp == b"+PONG\r\n"
+
+
+def test_echo(datastore):
+    resp = datastore.process(["ECHO", "message"])
+    assert resp == b"$7\r\nmessage\r\n"

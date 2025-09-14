@@ -24,6 +24,10 @@ class DataStore:
                 else:
                     return b"-ERR wrong number of arguments for 'ping' command\r\n"
 
+            case "ECHO":
+                message = args[0]
+                return f"${len(message)}\r\n{message}\r\n".encode()
+
             case "SET":
                 if len(args) != 2:
                     return b"-ERR wrong number of arguments for 'set' command\r\n"
