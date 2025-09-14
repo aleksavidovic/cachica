@@ -70,3 +70,10 @@ def test_encode_positive_integer():
 def test_encode_negative_integer():
     res = protocol.encode_integer(-420)
     assert res == b":-420\r\n"
+
+
+def test_parse_set_with_ttl_fields(parser):
+    request = b"*5\r\n$3\r\nSET\r\n$3\r\nkey\r\n$3\r\nval\r\n$2\r\nEX\r\n$2\r\n60\r\n"
+    parser.feed(request)
+    resp = parser.get_command()
+    assert resp == ["SET", "key", "val", "EX", "60"]
