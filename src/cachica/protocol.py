@@ -141,3 +141,10 @@ def encode_integer(integer: int) -> bytes:
 
 def encode_simple_error(error_message, error_prefix="ERR") -> bytes:
     return f"-{error_prefix} {error_message}\r\n".encode()
+
+
+def encode_array(strings: list[str]):
+    out = f"*{len(strings)}\r\n"
+    for string in strings:
+        out += f"${len(string)}\r\n{string}\r\n"
+    return out.encode()

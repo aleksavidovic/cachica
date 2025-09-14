@@ -1,5 +1,6 @@
-from cachica import protocol
 import time
+
+from cachica import protocol
 
 
 class DataStore:
@@ -35,7 +36,7 @@ class DataStore:
             return protocol.encode_simple_error("wrong number of arguments for 'set' command", error_prefix="ERR")
         if len(args) == 2:
             key, value = args
-            ttl_timestamp = time.time() # Set a value that denotes no expiration
+            ttl_timestamp = time.time()  # Set a value that denotes no expiration
             self._set(key, (value, ttl_timestamp))
         elif len(args) == 4:
             key, value = args
