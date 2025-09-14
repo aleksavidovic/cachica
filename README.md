@@ -31,7 +31,7 @@ This project will be developed in distinct phases, with clear objectives for eac
 * [x] Successfully parse `ECHO "message"` and send back the message.
 * [x] Basic logging for server events and client interactions.
 
-### Phase 2: The Core Engine (In-Memory Store & Basic Commands) ◀️
+### Phase 2: The Core Engine (In-Memory Store & Basic Commands) ✅
 
 **Goal**: Implement the central in-memory data store and handlers for fundamental key-value operations.
 
@@ -40,10 +40,10 @@ This project will be developed in distinct phases, with clear objectives for eac
 * [x] Implement `SET key value` functionality, storing the key-value pair in the `DataStore`.
 * [x] Implement `GET key` functionality, retrieving a value or returning `None` if the key doesn't exist.
 * [x] Implement `DEL key` functionality, removing a key-value pair.
-* [ ] Ensure `DataStore` operations are thread-safe if multi-threading is introduced later (or explicitly mention `asyncio`'s single-threaded nature in this context).
-* [ ] Write unit tests for `DataStore` operations.
+* [x] Ensure `DataStore` operations are thread-safe if multi-threading is introduced later (or explicitly mention `asyncio`'s single-threaded nature in this context).
+* [x] Write unit tests for `DataStore` operations.
 
-### Phase 3: Advanced Features (Key Expiration & Lists)
+### Phase 3: Advanced Features (Key Expiration & Lists) ◀️
 
 **Goal**: Introduce advanced data management features like time-to-live for keys and a new data structure (Lists).
 
