@@ -9,6 +9,7 @@ packages = [{include = "cachica", from = "src"}]
 # Entry point
 [tool.poetry.scripts]
 cachica-server = "cachica.server:main"
+cachica-client = "cachica.client:main"
 
 [tool.poetry.dependencies]
 python = ">=3.11"

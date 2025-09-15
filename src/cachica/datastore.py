@@ -1,11 +1,15 @@
+import logging
 import time
+from random import sample
 
 from cachica import protocol
+
+logger = logging.getLogger(__name__)
 
 
 class DataStore:
     def __init__(self):
-        self._data: dict[str, tuple[str, float | None]] = {}
+        self._data: dict[str, tuple[str, float]] = {}
         self._commands = {
             "PING": self._handle_ping,
             "ECHO": self._handle_echo,
@@ -36,12 +40,12 @@ class DataStore:
             return protocol.encode_simple_error("wrong number of arguments for 'set' command", error_prefix="ERR")
         if len(args) == 2:
             key, value = args
-            default_ttl = None  # Set a value that denotes no expiration
+            default_ttl = 60  # Set a value that denotes no expiration
             self._set(key, (value, default_ttl))
         elif len(args) == 4:
             (key, value, expire_type, expire_value) = args
             if expire_type in ("EX", "PX") and expire_value.isdigit():
-                ttl = None
+                ttl = 60
                 if expire_type == "EX":
                     ttl = time.time() + int(expire_value)
                 elif expire_type == "PX":
@@ -55,7 +59,7 @@ class DataStore:
         if len(args) != 1:
             return protocol.encode_simple_error("wrong number of arguments for 'get' command", error_prefix="ERR")
         key = args[0]
-        value: tuple[str, float | None] | None = self._get(key)
+        value: tuple[str, float] | None = self._get(key)
         if value is None:
             # RESP Null
             return protocol.encode_bulk_string(None)
@@ -91,8 +95,19 @@ class DataStore:
         else:
             return protocol.encode_simple_error(f"unknown command '{command_name}'", error_prefix="ERR")
 
-    def _set(self, key: str, value: tuple[str, float | None]):
+    def _set(self, key: str, value: tuple[str, float]):
         self._data[key] = value
 
-    def _get(self, key: str) -> tuple[str, float | None] | None:
+    def _get(self, key: str) -> tuple[str, float] | None:
         return self._data.get(key)
+
+    def evict_expired_keys(self):
+        keys_to_check = sample(sorted(self._data.keys()), len(self._data.keys()) // 10)
+        now = time.time()
+        keys_evicted = 0
+        for key in keys_to_check:
+            if self._data[key][1] < now:
+                del self._data[key]
+                keys_evicted += 1
+        if keys_evicted > 0:
+            logger.info(f"Evicted {keys_evicted} expired keys.")

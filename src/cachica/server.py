@@ -56,12 +56,18 @@ async def handle_client(datastore: DataStore, reader: StreamReader, writer: Stre
         await writer.wait_closed()
 
 
+async def eviction_loop(datastore: DataStore):
+    while True:
+        await asyncio.sleep(0.1)
+        datastore.evict_expired_keys()
+
+
 async def run_server():
     datastore = DataStore()
     client_handler = functools.partial(handle_client, datastore)
 
     server = await asyncio.start_server(client_handler, "0.0.0.0", 8888)
-
+    asyncio.create_task(eviction_loop(datastore))
     addr = server.sockets[0].getsockname()
     logger.info(f"Serving on {addr}")
 
