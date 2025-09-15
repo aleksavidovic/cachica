@@ -48,12 +48,13 @@ This project will be developed in distinct phases, with clear objectives for eac
 **Goal**: Introduce advanced data management features like time-to-live for keys and a new data structure (Lists).
 
 * [x] Modify `SET` command to accept `EX seconds` and `PX milliseconds` arguments.
-* [ ] Implement an expiration mechanism:
+* [x] Implement an expiration mechanism:
     * [x] Store expiration timestamps alongside values.
-    * [ ] Develop a background task (e.g., an `asyncio` task) to periodically scan for and evict expired keys.
+    * [x] Develop a passive eviction mechanism that gets triggered on read operations (GET)
+    * [x] Develop a background task (e.g., an `asyncio` task) to periodically scan for and evict expired keys.
 * [ ] Implement List data type support:
-    * Modify `DataStore` to handle lists (e.g., using `collections.deque`).
-    * Implement `LPUSH key value [value ...]`.
+    * [ ] Modify `DataStore` to handle lists (e.g., using `collections.deque`).
+    * [ ] Implement `LPUSH key value [value ...]`.
     * [ ] Implement `RPUSH key value [value ...]`.
     * [ ] Implement `LPOP key`.
     * [ ] Implement `LRANGE key start stop`.
