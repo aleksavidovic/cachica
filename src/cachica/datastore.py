@@ -40,16 +40,16 @@ class DataStore:
             return protocol.encode_simple_error("wrong number of arguments for 'set' command", error_prefix="ERR")
         if len(args) == 2:
             key, value = args
-            default_ttl = 60  # Set a value that denotes no expiration
+            default_ttl = float('inf') # Set a value that denotes no expiration
             self._set(key, (value, default_ttl))
         elif len(args) == 4:
             (key, value, expire_type, expire_value) = args
             if expire_type in ("EX", "PX") and expire_value.isdigit():
                 ttl = 60
                 if expire_type == "EX":
-                    ttl = time.time() + int(expire_value)
+                    ttl = time.monotonic() + int(expire_value)
                 elif expire_type == "PX":
-                    ttl = time.time() + (int(expire_value) / 1000)  # /1000 to get s from ms
+                    ttl = time.monotonic() + (int(expire_value) / 1000)  # /1000 to get s from ms
                 self._set(key, (value, ttl))
             else:
                 return protocol.encode_simple_error("Incorrect args")
@@ -64,10 +64,10 @@ class DataStore:
             # RESP Null
             return protocol.encode_bulk_string(None)
         else:
-            if value[1] is None or (value[1] > time.time()):
+            if value[1] is None or (value[1] > time.monotonic()):
                 return protocol.encode_bulk_string(value[0])
             else:
-                self._data[key]
+                del self._data[key]
                 return protocol.encode_bulk_string(None)
 
     def _handle_del(self, args: list) -> bytes:
@@ -86,7 +86,7 @@ class DataStore:
         """
         if not command:
             return protocol.encode_simple_error("empty command", error_prefix="ERR")
-
+        
         command_name = command[0].upper()
         args = command[1:]
 
@@ -102,8 +102,8 @@ class DataStore:
         return self._data.get(key)
 
     def evict_expired_keys(self):
-        keys_to_check = sample(sorted(self._data.keys()), len(self._data.keys()) // 10)
-        now = time.time()
+        keys_to_check = sample(list(self._data.keys()), len(self._data.keys()) // 10)
+        now = time.monotonic()
         keys_evicted = 0
         for key in keys_to_check:
             if self._data[key][1] < now:
