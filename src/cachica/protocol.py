@@ -45,35 +45,30 @@ class Parser:
             first_byte = self._buffer[0:1]
             match bytes(first_byte):
                 case b'*':
-                    print("Client parsing array")
                     command, consumed_bytes = self._parse_array(self._buffer)
                     if command is None:
                         break
                     self._commands.append(command)
                     self._buffer = self._buffer[consumed_bytes:]
                 case b'$': # Bulk string
-                    print("Client parsing bulk string") 
                     parsed_bulk_string, consumed_bytes = self._parse_bulk_string(self._buffer)
                     if parsed_bulk_string == None:
                         break
                     self._commands.append(parsed_bulk_string)
                     self._buffer = self._buffer[consumed_bytes:]
                 case b'+': # Simple string
-                    print("Client parsing simple string") 
                     parsed_simple_string, consumed_bytes = self._parse_simple_string(self._buffer)
                     if parsed_simple_string == None:
                         break
                     self._commands.append(parsed_simple_string)
                     self._buffer = self._buffer[consumed_bytes:]
                 case b'-': # Simple error
-                    print("Client parsing simple error") 
                     parsed_simple_error, consumed_bytes = self._parse_simple_error(self._buffer)
                     if parsed_simple_error == None:
                         break
                     self._commands.append(parsed_simple_error)
                     self._buffer = self._buffer[consumed_bytes:]
                 case b':': # Integer
-                    print("Client parsing integer") 
                     parsed_integer, consumed_bytes = self._parse_simple_error(self._buffer)
                     if parsed_integer == None:
                         break
