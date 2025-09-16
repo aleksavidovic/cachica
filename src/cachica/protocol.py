@@ -1,9 +1,8 @@
 import logging
 from collections import deque
 
-logger = logging.getLogger(__name__)
-
 CRLF = b"\r\n"  # Standard RESP terminator
+CRLF_LEN = 2
 
 
 class ProtocolError(Exception):
@@ -78,13 +77,15 @@ class Parser:
         Internal method to parse as many full commands from the buffer as possible.
         This is the core of the state machine.
         """
+        crlf = CRLF
+        crlf_len = CRLF_LEN
         while True:
             # Parsing until the buffer is exhausted or an incomplete command is found.
             if not self._buffer:
                 break
 
             # Find the position of the first delimiter
-            first_crlf_pos = self._buffer.find(CRLF)
+            first_crlf_pos = self._buffer.find(crlf)
             if first_crlf_pos == -1:
                 # Not even a full line in the buffer yet, wait for more data.
                 break
@@ -113,7 +114,9 @@ class Parser:
         Returns the parsed array and the number of bytes consumed.
         If the command is incomplete, returns (None, 0).
         """
-        first_crlf_pos = buffer.find(CRLF)
+        crlf = CRLF
+        crlf_len = CRLF_LEN
+        first_crlf_pos = buffer.find(crlf)
         line = buffer[1:first_crlf_pos]
 
         try:
@@ -122,7 +125,7 @@ class Parser:
             raise ProtocolError(f"Invalid array length: {line!r}") from None
 
         command_parts = []
-        current_pos = first_crlf_pos + len(CRLF)
+        current_pos = first_crlf_pos + crlf_len
 
         for _ in range(array_len):
             # Try to parse one bulk string for each element in the array.
@@ -142,7 +145,9 @@ class Parser:
         Parses a single RESP Bulk String.
         Returns the string and the number of bytes consumed.
         """
-        first_crlf_pos = buffer.find(CRLF)
+        crlf = CRLF
+        crlf_len = CRLF_LEN
+        first_crlf_pos = buffer.find(crlf)
         if first_crlf_pos == -1:
             return None, 0
 
@@ -154,18 +159,18 @@ class Parser:
             raise ProtocolError(f"Invalid bulk string length: {line!r}") from None
 
         # The bulk string data starts after the CRLF of its length prefix
-        str_start = first_crlf_pos + len(CRLF)
+        str_start = first_crlf_pos + crlf_len
         str_end = str_start + str_len
 
         # Check if the full bulk string data (including its final CRLF) is in the buffer
-        if len(buffer) < str_end + len(CRLF):
+        if len(buffer) < str_end + crlf_len:
             return None, 0
 
         # Extract the bulk string and decode it
         bulk_str = buffer[str_start:str_end].decode("utf-8")
 
         # Total bytes consumed is the end of the string + its final CRLF
-        consumed_bytes = str_end + len(CRLF)
+        consumed_bytes = str_end + crlf_len
 
         return bulk_str, consumed_bytes
 
@@ -175,7 +180,7 @@ class Parser:
             return None, 0
 
         sstring = buffer[1:first_crlf_pos].decode("utf-8")
-        return sstring, len(sstring) + len(CRLF) + 1
+        return sstring, len(sstring) + CRLF_LEN + 1
 
     def _parse_simple_error(self, buffer: bytearray) -> tuple[str | None, int]:
         first_crlf_pos = buffer.find(CRLF)
@@ -183,7 +188,7 @@ class Parser:
             return None, 0
 
         serror = buffer[1:first_crlf_pos].decode("utf-8")
-        return serror, len(serror) + len(CRLF) + 1
+        return serror, len(serror) + CRLF_LEN + 1
 
     def _parse_integer(self, buffer: bytearray) -> tuple[str | None, int]:
         first_crlf_pos = buffer.find(CRLF)
@@ -191,7 +196,7 @@ class Parser:
             return None, 0
 
         parsed_int = buffer[1:first_crlf_pos].decode("utf-8")
-        return parsed_int, len(parsed_int) + len(CRLF) + 1
+        return parsed_int, len(parsed_int) + CRLF_LEN + 1
 
 
 def encode_simple_string(string: str) -> bytes:

@@ -13,6 +13,7 @@ cachica-client = "cachica.client:main"
 
 [tool.poetry.dependencies]
 python = ">=3.11"
+uvloop = "0.21.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.12.12"

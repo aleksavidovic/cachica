@@ -1,3 +1,4 @@
+import uvloop
 import asyncio
 import functools
 import logging
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 async def handle_client(datastore: DataStore, reader: StreamReader, writer: StreamWriter):
     addr = writer.get_extra_info("peername")
-    logger.info(f"Client connected from: {addr}")
+    # logger.info(f"Client connected from: {addr}")
 
     parser = Parser()
 
@@ -35,7 +36,7 @@ async def handle_client(datastore: DataStore, reader: StreamReader, writer: Stre
                 if command is None:
                     break
 
-                logger.info(f"Processing command: {command}")
+                # logger.info(f"Processing command: {command}")
 
                 response = datastore.process(command)
 
@@ -51,7 +52,7 @@ async def handle_client(datastore: DataStore, reader: StreamReader, writer: Stre
     except Exception as e:
         logger.exception(f"An unexpected error occurred with client {addr}: {e}")
     finally:
-        logger.info(f"Closing the connection with {addr}")
+        # logger.info(f"Closing the connection with {addr}")
         writer.close()
         await writer.wait_closed()
 
@@ -78,7 +79,8 @@ async def run_server():
 def main():
     """The synchronous entry point for the application script."""
     try:
-        asyncio.run(run_server())
+        uvloop.run(run_server())
+        # asyncio.run(run_server())
     except KeyboardInterrupt:
         logger.info("Server shutting down.")
 
