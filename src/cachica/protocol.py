@@ -1,4 +1,3 @@
-import pdb
 import logging
 from collections import deque
 
@@ -44,33 +43,33 @@ class Parser:
 
             first_byte = self._buffer[0:1]
             match bytes(first_byte):
-                case b'*':
+                case b"*":
                     command, consumed_bytes = self._parse_array(self._buffer)
                     if command is None:
                         break
                     self._commands.append(command)
                     self._buffer = self._buffer[consumed_bytes:]
-                case b'$': # Bulk string
+                case b"$":  # Bulk string
                     parsed_bulk_string, consumed_bytes = self._parse_bulk_string(self._buffer)
-                    if parsed_bulk_string == None:
+                    if parsed_bulk_string is None:
                         break
                     self._commands.append(parsed_bulk_string)
                     self._buffer = self._buffer[consumed_bytes:]
-                case b'+': # Simple string
+                case b"+":  # Simple string
                     parsed_simple_string, consumed_bytes = self._parse_simple_string(self._buffer)
-                    if parsed_simple_string == None:
+                    if parsed_simple_string is None:
                         break
                     self._commands.append(parsed_simple_string)
                     self._buffer = self._buffer[consumed_bytes:]
-                case b'-': # Simple error
+                case b"-":  # Simple error
                     parsed_simple_error, consumed_bytes = self._parse_simple_error(self._buffer)
-                    if parsed_simple_error == None:
+                    if parsed_simple_error is None:
                         break
                     self._commands.append(parsed_simple_error)
                     self._buffer = self._buffer[consumed_bytes:]
-                case b':': # Integer
+                case b":":  # Integer
                     parsed_integer, consumed_bytes = self._parse_simple_error(self._buffer)
-                    if parsed_integer == None:
+                    if parsed_integer is None:
                         break
                     self._commands.append(parsed_integer)
                     self._buffer = self._buffer[consumed_bytes:]
@@ -170,7 +169,7 @@ class Parser:
         consumed_bytes = str_end + len(CRLF)
 
         return bulk_str, consumed_bytes
-    
+
     def _parse_simple_string(self, buffer: bytearray) -> tuple[str | None, int]:
         first_crlf_pos = buffer.find(CRLF)
         if first_crlf_pos == -1:
@@ -186,7 +185,7 @@ class Parser:
 
         serror = buffer[1:first_crlf_pos].decode("utf-8")
         return serror, len(serror) + len(CRLF) + 1
-        
+
     def _parse_integer(self, buffer: bytearray) -> tuple[str | None, int]:
         first_crlf_pos = buffer.find(CRLF)
         if first_crlf_pos == -1:
@@ -194,6 +193,7 @@ class Parser:
 
         parsed_int = buffer[1:first_crlf_pos].decode("utf-8")
         return parsed_int, len(parsed_int) + len(CRLF) + 1
+
 
 def encode_simple_string(string: str) -> bytes:
     return f"+{string}\r\n".encode()

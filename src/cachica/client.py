@@ -22,7 +22,7 @@ class Client:
     def SET(self, *args):
         self._socket.sendall(protocol.encode_array(["SET", *args]))
         return self._recv()
-        
+
     def GET(self, key):
         self._socket.sendall(protocol.encode_array(["GET", key]))
         return self._recv()
@@ -35,7 +35,7 @@ class Client:
         resp_data = self._socket.recv(num_bytes)
         self._parser.feed(resp_data)
         return self._parser.get_command()
-        
+
 
 def main():
     client = Client()

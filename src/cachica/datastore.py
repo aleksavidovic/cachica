@@ -64,7 +64,7 @@ class DataStore:
         # check _expiry
         if key in self._expiry and time.monotonic() > self._expiry[key]:
             logger.info(f"PASSIVE EVICTION: deleting expired key `{key}`")
-            del self._expiry[key]   
+            del self._expiry[key]
             del self._data[key]
             return protocol.encode_bulk_string(None)
 
@@ -91,7 +91,7 @@ class DataStore:
         """
         if not command:
             return protocol.encode_simple_error("empty command", error_prefix="ERR")
-        
+
         command_name = command[0].upper()
         args = command[1:]
 
@@ -113,8 +113,8 @@ class DataStore:
         len_keys = len(self._expiry.keys())
         if len_keys == 0:
             return
-        sample_size = len_keys // 10 if len_keys > 10 else len_keys 
-        keys_to_check = sample(list(self._expiry.keys()),  sample_size)
+        sample_size = len_keys // 10 if len_keys > 10 else len_keys
+        keys_to_check = sample(list(self._expiry.keys()), sample_size)
 
         now = time.monotonic()
         for key in keys_to_check:
