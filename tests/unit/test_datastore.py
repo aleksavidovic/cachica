@@ -79,14 +79,14 @@ def test_set_too_many_args_returns_error(datastore):
 
 def test_valid_get(populated_datastore_factory):
     command = ["GET", "name"]
-    datastore = populated_datastore_factory({"name": ("cachica", None)})
+    datastore = populated_datastore_factory({"name": "cachica"})
     resp = datastore.process(command)
     assert resp == b"$7\r\ncachica\r\n"
 
 
 def test_get_key_not_found(populated_datastore_factory):
     command = ["GET", "name"]
-    datastore = populated_datastore_factory({"app": ("cachica", None)})
+    datastore = populated_datastore_factory({"app": "cachica"})
     resp = datastore.process(command)
     assert resp == b"$-1\r\n"
 
@@ -103,21 +103,21 @@ def test_get_too_many_args_returns_error(datastore):
 
 def test_valid_del_one_key(populated_datastore_factory):
     command = ["DEL", "app"]
-    datastore = populated_datastore_factory({"app": ("redis", None)})
+    datastore = populated_datastore_factory({"app": "redis"})
     resp = datastore.process(command)
     assert resp == b":1\r\n"
 
 
 def test_valid_del_key_no_match_ignores(populated_datastore_factory):
     command = ["DEL", "app", "name"]
-    datastore = populated_datastore_factory({"app": ("redis", None), "fruit": ("banana", None)})
+    datastore = populated_datastore_factory({"app": "redis", "fruit": "banana"})
     resp = datastore.process(command)
     assert resp == b":1\r\n"
 
 
 def test_valid_del_no_keys_match_returns_zero(populated_datastore_factory):
     command = ["DEL", "vegetable", "name"]
-    datastore = populated_datastore_factory({"app": ("redis", None), "fruit": ("banana", None)})
+    datastore = populated_datastore_factory({"app": "redis", "fruit": "banana"})
     resp = datastore.process(command)
     assert resp == b":0\r\n"
 
