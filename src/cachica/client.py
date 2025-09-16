@@ -4,7 +4,7 @@ from cachica import protocol
 
 
 class Client:
-    def __init__(self, client_id=0, host="127.0.0.1", port=8888):
+    def __init__(self, client_id="cachica-client", host="127.0.0.1", port=8888):
         self._client_id = client_id
         self._server_host = host
         self._server_port = port

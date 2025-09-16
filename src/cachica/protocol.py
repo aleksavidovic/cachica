@@ -31,7 +31,6 @@ class Parser:
         return None
 
     def _try_parse_client(self):
-        print("Parsing as client")
         while True:
             if not self._buffer:
                 break
