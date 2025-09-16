@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 
 class DataStore:
     def __init__(self):
-        self._data: dict[str, tuple[str, float]] = {}
+        self._data: dict[str, str] = {}
+        self._expiry: dict[str, float] = {}
         self._commands = {
             "PING": self._handle_ping,
             "ECHO": self._handle_echo,
@@ -39,18 +40,19 @@ class DataStore:
         if len(args) not in (2, 4):
             return protocol.encode_simple_error("wrong number of arguments for 'set' command", error_prefix="ERR")
         if len(args) == 2:
+            # if args == 2 => no expiry time is set => write only to _data not to _expiry
             key, value = args
-            default_ttl = float('inf') # Set a value that denotes no expiration
-            self._set(key, (value, default_ttl))
+            self._set(key, value)
         elif len(args) == 4:
             (key, value, expire_type, expire_value) = args
             if expire_type in ("EX", "PX") and expire_value.isdigit():
-                ttl = 60
+                ttl = 0
                 if expire_type == "EX":
                     ttl = time.monotonic() + int(expire_value)
                 elif expire_type == "PX":
                     ttl = time.monotonic() + (int(expire_value) / 1000)  # /1000 to get s from ms
-                self._set(key, (value, ttl))
+                self._set_expiry(key, ttl)
+                self._set(key, value)
             else:
                 return protocol.encode_simple_error("Incorrect args")
         return protocol.encode_simple_string("OK")
@@ -59,16 +61,19 @@ class DataStore:
         if len(args) != 1:
             return protocol.encode_simple_error("wrong number of arguments for 'get' command", error_prefix="ERR")
         key = args[0]
-        value: tuple[str, float] | None = self._get(key)
+        # check _expiry
+        if key in self._expiry and time.monotonic() > self._expiry[key]:
+            logger.info(f"PASSIVE EVICTION: deleting expired key `{key}`")
+            del self._expiry[key]   
+            del self._data[key]
+            return protocol.encode_bulk_string(None)
+
+        value: str | None = self._get(key)
         if value is None:
             # RESP Null
             return protocol.encode_bulk_string(None)
         else:
-            if value[1] is None or (value[1] > time.monotonic()):
-                return protocol.encode_bulk_string(value[0])
-            else:
-                del self._data[key]
-                return protocol.encode_bulk_string(None)
+            return protocol.encode_bulk_string(value)
 
     def _handle_del(self, args: list) -> bytes:
         if len(args) == 0:
@@ -95,19 +100,25 @@ class DataStore:
         else:
             return protocol.encode_simple_error(f"unknown command '{command_name}'", error_prefix="ERR")
 
-    def _set(self, key: str, value: tuple[str, float]):
+    def _set_expiry(self, key: str, ex: float):
+        self._expiry[key] = ex
+
+    def _set(self, key: str, value: str):
         self._data[key] = value
 
-    def _get(self, key: str) -> tuple[str, float] | None:
+    def _get(self, key: str) -> str | None:
         return self._data.get(key)
 
     def evict_expired_keys(self):
-        keys_to_check = sample(list(self._data.keys()), len(self._data.keys()) // 10)
+        len_keys = len(self._expiry.keys())
+        if len_keys == 0:
+            return
+        sample_size = len_keys // 10 if len_keys > 10 else len_keys 
+        keys_to_check = sample(list(self._expiry.keys()),  sample_size)
+
         now = time.monotonic()
-        keys_evicted = 0
         for key in keys_to_check:
-            if self._data[key][1] < now:
+            if now > self._expiry[key]:
+                logger.info(f"ACTIVE EVICTION: deleting expired key `{key}`")
+                del self._expiry[key]
                 del self._data[key]
-                keys_evicted += 1
-        if keys_evicted > 0:
-            logger.info(f"Evicted {keys_evicted} expired keys.")

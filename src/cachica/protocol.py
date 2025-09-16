@@ -1,3 +1,4 @@
+import pdb
 import logging
 from collections import deque
 
@@ -13,9 +14,11 @@ class ProtocolError(Exception):
 class Parser:
     """A synchronous, stateful RESP parser."""
 
-    def __init__(self) -> None:
+    def __init__(self, is_client=False) -> None:
+        self._is_client = is_client
         self._buffer = bytearray()
         self._commands = deque()
+        self._try_parse = self._try_parse_client if self._is_client else self._try_parse_server
 
     def feed(self, data: bytes) -> None:
         """Adds raw network data to the internal buffer."""
@@ -28,7 +31,56 @@ class Parser:
             return self._commands.popleft()
         return None
 
-    def _try_parse(self):
+    def _try_parse_client(self):
+        print("Parsing as client")
+        while True:
+            if not self._buffer:
+                break
+
+            # Find the position of the first delimiter
+            first_crlf_pos = self._buffer.find(CRLF)
+            if first_crlf_pos == -1:
+                break
+
+            first_byte = self._buffer[0:1]
+            match bytes(first_byte):
+                case b'*':
+                    print("Client parsing array")
+                    command, consumed_bytes = self._parse_array(self._buffer)
+                    if command is None:
+                        break
+                    self._commands.append(command)
+                    self._buffer = self._buffer[consumed_bytes:]
+                case b'$': # Bulk string
+                    print("Client parsing bulk string") 
+                    parsed_bulk_string, consumed_bytes = self._parse_bulk_string(self._buffer)
+                    if parsed_bulk_string == None:
+                        break
+                    self._commands.append(parsed_bulk_string)
+                    self._buffer = self._buffer[consumed_bytes:]
+                case b'+': # Simple string
+                    print("Client parsing simple string") 
+                    parsed_simple_string, consumed_bytes = self._parse_simple_string(self._buffer)
+                    if parsed_simple_string == None:
+                        break
+                    self._commands.append(parsed_simple_string)
+                    self._buffer = self._buffer[consumed_bytes:]
+                case b'-': # Simple error
+                    print("Client parsing simple error") 
+                    parsed_simple_error, consumed_bytes = self._parse_simple_error(self._buffer)
+                    if parsed_simple_error == None:
+                        break
+                    self._commands.append(parsed_simple_error)
+                    self._buffer = self._buffer[consumed_bytes:]
+                case b':': # Integer
+                    print("Client parsing integer") 
+                    parsed_integer, consumed_bytes = self._parse_simple_error(self._buffer)
+                    if parsed_integer == None:
+                        break
+                    self._commands.append(parsed_integer)
+                    self._buffer = self._buffer[consumed_bytes:]
+
+    def _try_parse_server(self):
         """
         Internal method to parse as many full commands from the buffer as possible.
         This is the core of the state machine.
@@ -123,7 +175,30 @@ class Parser:
         consumed_bytes = str_end + len(CRLF)
 
         return bulk_str, consumed_bytes
+    
+    def _parse_simple_string(self, buffer: bytearray) -> tuple[str | None, int]:
+        first_crlf_pos = buffer.find(CRLF)
+        if first_crlf_pos == -1:
+            return None, 0
 
+        sstring = buffer[1:first_crlf_pos].decode("utf-8")
+        return sstring, len(sstring) + len(CRLF) + 1
+
+    def _parse_simple_error(self, buffer: bytearray) -> tuple[str | None, int]:
+        first_crlf_pos = buffer.find(CRLF)
+        if first_crlf_pos == -1:
+            return None, 0
+
+        serror = buffer[1:first_crlf_pos].decode("utf-8")
+        return serror, len(serror) + len(CRLF) + 1
+        
+    def _parse_integer(self, buffer: bytearray) -> tuple[str | None, int]:
+        first_crlf_pos = buffer.find(CRLF)
+        if first_crlf_pos == -1:
+            return None, 0
+
+        parsed_int = buffer[1:first_crlf_pos].decode("utf-8")
+        return parsed_int, len(parsed_int) + len(CRLF) + 1
 
 def encode_simple_string(string: str) -> bytes:
     return f"+{string}\r\n".encode()
