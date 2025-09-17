@@ -1,24 +1,28 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import uvloop
 import asyncio
 import functools
 import logging
+import logging.config
 from asyncio import StreamReader, StreamWriter
 
+from cachica.config import get_logging_config
 from cachica.datastore import DataStore
 from cachica.protocol import Parser, ProtocolError
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    style="{",
-    format="{asctime} [{name}] [{levelname}] {filename}:{lineno:d} - {message}",
-)
+# --- LOGGING CONFIG ---
+log_level_from_env = os.getenv("LOG_LEVEL", "INFO")
+logging_config = get_logging_config(log_level_from_env)
+logging.config.dictConfig(logging_config)
 
 logger = logging.getLogger(__name__)
 
 
 async def handle_client(datastore: DataStore, reader: StreamReader, writer: StreamWriter):
     addr = writer.get_extra_info("peername")
-    # logger.info(f"Client connected from: {addr}")
+    logger.info("Client connected from: %s", addr)
 
     parser = Parser()
 
@@ -36,7 +40,7 @@ async def handle_client(datastore: DataStore, reader: StreamReader, writer: Stre
                 if command is None:
                     break
 
-                # logger.info(f"Processing command: {command}")
+                logger.info("Processing command: %s", command)
 
                 response = datastore.process(command)
 
@@ -44,15 +48,15 @@ async def handle_client(datastore: DataStore, reader: StreamReader, writer: Stre
                 await writer.drain()
 
     except ConnectionResetError:
-        logger.warning(f"Connection reset by client {addr}")
+        logger.warning("Connection reset by client: %s", addr)
     except ProtocolError as e:
-        logger.error(f"Protocol Error from {addr}: {e}")
-        writer.write(f"-ERR {e}\r\n".encode("utf-8"))
+        logger.error("Protocol Error from %s: %s", addr, e)
+        writer.write(f"-ERR {e}\r\n".encode("utf-8"))           # TODO: Questionable?
         await writer.drain()
     except Exception as e:
-        logger.exception(f"An unexpected error occurred with client {addr}: {e}")
+        logger.exception("An unexpected error occurred with client %s: %s", addr, e)
     finally:
-        # logger.info(f"Closing the connection with {addr}")
+        logger.info("Closing the connection with %s", addr)
         writer.close()
         await writer.wait_closed()
 
@@ -70,7 +74,7 @@ async def run_server():
     server = await asyncio.start_server(client_handler, "0.0.0.0", 8888)
     asyncio.create_task(eviction_loop(datastore))
     addr = server.sockets[0].getsockname()
-    logger.info(f"Serving on {addr}")
+    logger.info("Serving on %s", addr)
 
     async with server:
         await server.serve_forever()

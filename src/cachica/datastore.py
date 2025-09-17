@@ -1,15 +1,28 @@
 import logging
+import pdb
 import time
 from random import sample
-
+from dataclasses import dataclass
 from cachica import protocol
+from enum import Enum, auto
+from collections import deque
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
+class DataType(Enum):
+    STRING = auto()
+    LIST = auto()
+
+@dataclass
+class CacheValue:
+    __slots__ = ('value_type', 'value')
+    value_type: DataType
+    value: Any
 
 class DataStore:
     def __init__(self):
-        self._data: dict[str, str] = {}
+        self._data: dict[str, CacheValue] = {}
         self._expiry: dict[str, float] = {}
         self._commands = {
             "PING": self._handle_ping,
@@ -17,7 +30,34 @@ class DataStore:
             "SET": self._handle_set,
             "GET": self._handle_get,
             "DEL": self._handle_del,
+            "LPUSH": self._handle_lpush,
+            "LPOP": self._handle_lpop,
         }
+
+    def _handle_lpush(self, args: list):
+        logger.info(args)
+        if len(args) < 2:
+            return protocol.encode_simple_error("wrong number of args")
+        if args[0] in self._data.keys():
+            if self._data[args[0]].value_type == DataType.LIST:
+                self._data[args[0]].value.appendleft(args[1])
+                return protocol.encode_integer(len(args)-1)
+        else:
+            self._data[args[0]] = CacheValue(DataType.LIST, deque(args[1:]))
+            return protocol.encode_integer(len(args[1:]))
+        return protocol.encode_simple_error("wrong type")
+
+    def _handle_lpop(self, args: list):
+        logger.info(args)
+        if len(args) != 1:
+            return protocol.encode_simple_error("wrong number of args")
+        if args[0] in self._data.keys():
+            if self._data[args[0]].value_type == DataType.LIST and len(self._data[args[0]].value) > 0:
+                val = self._data[args[0]].value.popleft()
+                return protocol.encode_simple_string(val)
+            return protocol.encode_simple_error("wrong type")
+
+
 
     def _handle_ping(self, args: list) -> bytes:
         if len(args) == 0:
@@ -42,7 +82,7 @@ class DataStore:
         if len(args) == 2:
             # if args == 2 => no expiry time is set => write only to _data not to _expiry
             key, value = args
-            self._set(key, value)
+            self._set(key, CacheValue(DataType.STRING, value))
         elif len(args) == 4:
             (key, value, expire_type, expire_value) = args
             if expire_type in ("EX", "PX") and expire_value.isdigit():
@@ -52,7 +92,7 @@ class DataStore:
                 elif expire_type == "PX":
                     ttl = time.monotonic() + (int(expire_value) / 1000)  # /1000 to get s from ms
                 self._set_expiry(key, ttl)
-                self._set(key, value)
+                self._set(key, CacheValue(DataType.STRING, value))
             else:
                 return protocol.encode_simple_error("Incorrect args")
         return protocol.encode_simple_string("OK")
@@ -63,7 +103,7 @@ class DataStore:
         key = args[0]
         # check _expiry
         if key in self._expiry and time.monotonic() > self._expiry[key]:
-            logger.info(f"PASSIVE EVICTION: deleting expired key `{key}`")
+            logger.debug("PASSIVE EVICTION: deleting expired key %s", key)
             del self._expiry[key]
             del self._data[key]
             return protocol.encode_bulk_string(None)
@@ -103,11 +143,14 @@ class DataStore:
     def _set_expiry(self, key: str, ex: float):
         self._expiry[key] = ex
 
-    def _set(self, key: str, value: str):
+    def _set(self, key: str, value: CacheValue):
         self._data[key] = value
 
     def _get(self, key: str) -> str | None:
-        return self._data.get(key)
+        entry = self._data.get(key)
+        if entry is not None and entry.value_type != DataType.LIST:
+            return entry.value
+        return None
 
     def evict_expired_keys(self):
         len_keys = len(self._expiry.keys())
@@ -119,6 +162,6 @@ class DataStore:
         now = time.monotonic()
         for key in keys_to_check:
             if now > self._expiry[key]:
-                logger.info(f"ACTIVE EVICTION: deleting expired key `{key}`")
+                logger.debug("ACTIVE EVICTION: deleting expired key %s", key)
                 del self._expiry[key]
                 del self._data[key]

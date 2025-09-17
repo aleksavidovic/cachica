@@ -31,6 +31,14 @@ class Client:
         self._socket.sendall(protocol.encode_array(["DEL", *keys]))
         return self._recv()
 
+    def LPUSH(self, args):
+        self._socket.sendall(protocol.encode_array(["LPUSH", *args]))
+        return self._recv()
+
+    def LPOP(self, args):
+        self._socket.sendall(protocol.encode_array(["LPOP", *args]))
+        return self._recv()
+
     def _recv(self, num_bytes=1024):
         resp_data = self._socket.recv(num_bytes)
         self._parser.feed(resp_data)
@@ -71,6 +79,18 @@ def main():
                     continue
                 else:
                     resp = client.DEL(prompt[1:])
+            case "LPUSH":
+                if len(prompt) < 3:
+                    print("Incorrect number of args for 'lpush' command")
+                    continue
+                else:
+                    resp = client.LPUSH(prompt[1:])
+            case "LPOP":
+                if len(prompt) < 2:
+                    print("Incorrect number of args for 'lpop' command")
+                    continue
+                else:
+                    resp = client.LPOP(prompt[1:])
             case _:
                 print("Unknown command.")
                 continue
