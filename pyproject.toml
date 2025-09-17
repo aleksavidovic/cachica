@@ -11,15 +11,19 @@ packages = [{include = "cachica", from = "src"}]
 cachica-server = "cachica.server:main"
 cachica-client = "cachica.client:main"
 
+
 [tool.poetry.dependencies]
 python = ">=3.11"
 uvloop = "0.21.0"
+python-dotenv = "^1.1.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.12.12"
 pytest = "^8.4.2"
 numpy = "^2.3.3"
 snakeviz = "^2.2.2"
+locust = "^2.40.0"
+pytest-asyncio = "^1.2.0"
 
 [build-system]
 requires = ["poetry-core"]
