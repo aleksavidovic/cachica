@@ -40,7 +40,7 @@ async def handle_client(datastore: DataStore, reader: StreamReader, writer: Stre
                 if command is None:
                     break
 
-                logger.info("Processing command: %s", command)
+                logger.debug("Processing command: %s", command)
 
                 response = datastore.process(command)
 

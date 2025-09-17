@@ -35,7 +35,7 @@ class DataStore:
         }
 
     def _handle_lpush(self, args: list):
-        logger.info(args)
+        logger.debug("LPUSH with args %s", args)
         if len(args) < 2:
             return protocol.encode_simple_error("wrong number of args")
         if args[0] in self._data.keys():
@@ -48,7 +48,7 @@ class DataStore:
         return protocol.encode_simple_error("wrong type")
 
     def _handle_lpop(self, args: list):
-        logger.info(args)
+        logger.debug("LPOP with args %s", args)
         if len(args) != 1:
             return protocol.encode_simple_error("wrong number of args")
         if args[0] in self._data.keys():
@@ -56,6 +56,7 @@ class DataStore:
                 val = self._data[args[0]].value.popleft()
                 return protocol.encode_simple_string(val)
             return protocol.encode_simple_error("wrong type")
+        return protocol.encode_simple_error("wrong key")
 
 
 
@@ -156,12 +157,13 @@ class DataStore:
         len_keys = len(self._expiry.keys())
         if len_keys == 0:
             return
-        sample_size = len_keys // 10 if len_keys > 10 else len_keys
+        sample_size = 10
         keys_to_check = sample(list(self._expiry.keys()), sample_size)
 
         now = time.monotonic()
         for key in keys_to_check:
-            if now > self._expiry[key]:
+            expiry_time = self._expiry.get(key)
+            if expiry_time is not None and now > expiry_time:
                 logger.debug("ACTIVE EVICTION: deleting expired key %s", key)
                 del self._expiry[key]
                 del self._data[key]
